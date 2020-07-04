@@ -8,10 +8,12 @@ const uuidv4 = require('uuid/v4')
 *	@param {object} 
 *		name {string}
 */
-const createUser = ({name = ""} = {})=>(
+const createUser = ({name = "",email,socketId=null} = {})=>(
 	{
 		id:uuidv4(),
-		name
+		email,
+		name,
+		socketId
 		
 	}
 )
@@ -27,12 +29,13 @@ const createUser = ({name = ""} = {})=>(
 *		message {string}
 *		sender {string}
 */
-const createMessage = ({message = "", sender = ""} = { })=>(
+const createMessage = ({message = "", sender = "",email=""} = { })=>(
 		{
 			id:uuidv4(),
 			time:getTime(new Date(Date.now())),
 			message,
-			sender	
+			sender,
+			email,
 		}
 
 	)
@@ -59,7 +62,6 @@ const createChat = ({messages = [], name = "Community", users = []} = {})=>(
 		typingUsers:[]
 	}
 )
-
 
 /*
 *	@param date {Date}
