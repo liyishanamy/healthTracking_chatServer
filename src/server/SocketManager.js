@@ -7,6 +7,7 @@ const { VERIFY_USER, USER_CONNECTED, USER_DISCONNECTED,
 const { createUser, createMessage, createChat } = require('../Factories')
 
 let connectedUsers = { }
+let chatList ={ }
 
 let communityChat = createChat()
 
@@ -36,6 +37,7 @@ module.exports = function(socket){
 		console.log("USER_CONNECTED",user)
 		user.socketId = socket.id
 		connectedUsers = addUser(connectedUsers, user)
+		console.log("connect the user",user)
 		socket.user = user
 
 		sendMessageToChatFromUser = sendMessageToChat(user.name)
@@ -76,17 +78,42 @@ module.exports = function(socket){
 		sendMessageToChatFromUser(chatId, message,email)
 	})
 
+
 	socket.on(TYPING, ({chatId, isTyping})=>{
 		console.log("TYPING",chatId,isTyping)
-		console.log(sendMessageToChatFromUser)
 		sendTypingFromUser(chatId, isTyping)
 	})
 	socket.on(PRIVATE_MESSAGE,({receiver,sender})=>{
+		// console.log("connectedUsers",connectedUsers[receiver].name)
+		console.log("check",receiver,sender)
 		if(receiver in connectedUsers){
-			const newChat = createChat({name:`${receiver}&${sender}`,users:[receiver,sender]})
-			const receiverSocket = connectedUsers[receiver].socketId
-			socket.to(receiverSocket).emit(PRIVATE_MESSAGE,newChat)
-			socket.emit(PRIVATE_MESSAGE,newChat)
+			console.log("receiver",receiver)
+			console.log("chat name",connectedUsers[receiver]+" and "+connectedUsers[sender])
+			console.log("sender",sender)
+			let newChat
+			if(receiver+" "+sender in chatList ){
+				newChat = chatList[receiver+" "+sender]
+				socket.emit(PRIVATE_MESSAGE,newChat)
+
+			}else if(sender+" "+receiver in chatList ){
+				newChat = chatList[sender+" "+receiver]
+				socket.emit(PRIVATE_MESSAGE,newChat)
+
+			}else{
+				newChat = createChat({name:connectedUsers[receiver].name+" and "+connectedUsers[sender].name,users:[receiver,sender]})
+
+				chatList = addChat(chatList,newChat)
+				console.log("check chatList",chatList)
+				const receiverSocket = connectedUsers[receiver].socketId
+				socket.to(receiverSocket).emit(PRIVATE_MESSAGE,newChat)
+				socket.emit(PRIVATE_MESSAGE,newChat)
+
+			}
+
+
+
+
+
 		}
 	})
 
@@ -111,7 +138,7 @@ function sendTypingToChat(user){
 */
 function sendMessageToChat(sender){
 	return (chatId, message,email)=>{
-		console.log("sendMessageToChat",chatId, message,email)
+		console.log("sendMessageToChat",sender,chatId, message,email,createMessage({message, sender,email}),`${MESSAGE_RECIEVED}-${chatId}`)
 		io.emit(`${MESSAGE_RECIEVED}-${chatId}`, createMessage({message, sender,email}))
 	}
 }
@@ -124,7 +151,14 @@ function sendMessageToChat(sender){
 */
 function addUser(userList, user){
 	let newList = Object.assign({}, userList)
-	newList[user.name] = user
+	newList[user.email] = user
+	return newList
+}
+
+
+function addChat(chatList, chat){
+	let newList = Object.assign({}, chatList)
+	newList[chat.users[0]+" "+chat.users[1]] = chat
 	return newList
 }
 
