@@ -12,9 +12,6 @@ let chatList ={ }
 let communityChat = createChat()
 
 module.exports = function(socket){
-					
-	// console.log('\x1bc'); //clears console
-	console.log("Socket Id:" + socket.id);
 
 	let sendMessageToChatFromUser;
 
@@ -34,10 +31,8 @@ module.exports = function(socket){
 
 	//User Connects with username
 	socket.on(USER_CONNECTED, (user)=>{
-		console.log("USER_CONNECTED",user)
 		user.socketId = socket.id
 		connectedUsers = addUser(connectedUsers, user)
-		console.log("connect the user",user)
 		socket.user = user
 
 		sendMessageToChatFromUser = sendMessageToChat(user.name)
@@ -45,17 +40,13 @@ module.exports = function(socket){
 
 		io.emit(USER_CONNECTED, connectedUsers)
 
-		console.log("connectedUsers",connectedUsers);
-
 	})
 	
 	//User disconnects
 	socket.on('disconnect', ()=>{
 		if("user" in socket){
 			connectedUsers = removeUser(connectedUsers, socket.user.name)
-
 			io.emit(USER_DISCONNECTED, connectedUsers)
-			console.log("Disconnect", connectedUsers);
 		}
 	})
 
@@ -64,7 +55,6 @@ module.exports = function(socket){
 	socket.on(LOGOUT, ()=>{
 		connectedUsers = removeUser(connectedUsers, socket.user.name)
 		io.emit(USER_DISCONNECTED, connectedUsers)
-		console.log("Disconnect", connectedUsers);
 
 	})
 
@@ -74,22 +64,15 @@ module.exports = function(socket){
 	})
 
 	socket.on(MESSAGE_SENT, ({chatId, message,email})=>{
-		console.log("sendMessageToChatFromUser",chatId,message)
 		sendMessageToChatFromUser(chatId, message,email)
 	})
 
 
 	socket.on(TYPING, ({chatId, isTyping})=>{
-		console.log("TYPING",chatId,isTyping)
 		sendTypingFromUser(chatId, isTyping)
 	})
 	socket.on(PRIVATE_MESSAGE,({receiver,sender})=>{
-		// console.log("connectedUsers",connectedUsers[receiver].name)
-		console.log("check",receiver,sender)
 		if(receiver in connectedUsers){
-			console.log("receiver",receiver)
-			console.log("chat name",connectedUsers[receiver]+" and "+connectedUsers[sender])
-			console.log("sender",sender)
 			let newChat
 			if(receiver+" "+sender in chatList ){
 				newChat = chatList[receiver+" "+sender]
@@ -101,19 +84,15 @@ module.exports = function(socket){
 
 			}else{
 				newChat = createChat({name:connectedUsers[receiver].name+" and "+connectedUsers[sender].name,users:[receiver,sender]})
-
 				chatList = addChat(chatList,newChat)
-				console.log("check chatList",chatList)
 				const receiverSocket = connectedUsers[receiver].socketId
 				socket.to(receiverSocket).emit(PRIVATE_MESSAGE,newChat)
 				socket.emit(PRIVATE_MESSAGE,newChat)
 
 			}
 
-
-
-
-
+		}else if(!(receiver in connectedUsers)){
+			socket.emit(PRIVATE_MESSAGE,[])
 		}
 	})
 
@@ -138,7 +117,6 @@ function sendTypingToChat(user){
 */
 function sendMessageToChat(sender){
 	return (chatId, message,email)=>{
-		console.log("sendMessageToChat",sender,chatId, message,email,createMessage({message, sender,email}),`${MESSAGE_RECIEVED}-${chatId}`)
 		io.emit(`${MESSAGE_RECIEVED}-${chatId}`, createMessage({message, sender,email}))
 	}
 }
